@@ -70,9 +70,10 @@ const App: React.FC = () => {
         <span style={{ fontSize: '12px', color: '#999' }}>(30个任务)</span>
         <Tooltip title="点击查看示例任务">
           <QuestionCircleOutlined 
-            style={{ color: '#1890ff', cursor: 'pointer' }} 
+            style={{ color: '#1890ff', cursor: 'pointer', marginLeft: '5px' }} 
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               showTaskExamples(category);
             }}
           />
@@ -97,9 +98,10 @@ const App: React.FC = () => {
             <span style={{ fontSize: '12px', color: '#999' }}>({tasks.length}个任务)</span>
             <Tooltip title="点击查看示例任务">
               <QuestionCircleOutlined 
-                style={{ color: '#1890ff', cursor: 'pointer' }} 
+                style={{ color: '#1890ff', cursor: 'pointer', marginLeft: '5px' }} 
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   // 显示自定义任务示例
                   Modal.info({
                     title: `${customCategory} 类型任务示例`,
