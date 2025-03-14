@@ -28,106 +28,44 @@
    - 进度条显示准确率
    - 详细的测试结果表格
 
-## 安装和运行
+5. **成本分析**
+   - 支持输入GPU型号、数量和每小时成本
+   - 计算每个任务类别的成本
+   - 统计总体运行时间和成本
 
-1. 克隆项目
+## 快速开始
+
+### 1. 克隆项目
+
 ```bash
-git clone [项目地址]
-cd llm-web-bench
+git clone https://github.com/pp5ee/LLMWebBench.git
+cd LLMWebBench
 ```
 
-2. 安装依赖
+### 2. 安装依赖
+
 ```bash
 npm install
+# 或者使用 yarn
+yarn install
 ```
 
-3. 启动开发服务器
+### 3. 启动开发服务器
+
 ```bash
 npm start
+# 或者使用 yarn
+yarn start
 ```
 
 应用将在 http://localhost:3000 启动。
-
-## 部署指南
-
-### 1. 构建生产版本
-
-```bash
-npm run build
-```
-
-这将在 `build` 目录下生成优化后的生产版本文件。
-
-### 2. 部署方式
-
-#### 方式一：使用静态文件服务器
-
-1. 安装 `serve` 包（可选）
-```bash
-npm install -g serve
-```
-
-2. 运行静态服务器
-```bash
-serve -s build
-```
-
-#### 方式二：使用 Nginx
-
-1. 将 `build` 目录下的文件复制到 Nginx 的网站目录
-```bash
-cp -r build/* /usr/share/nginx/html/
-```
-
-2. Nginx 配置示例
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    root /usr/share/nginx/html;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
-
-#### 方式三：使用 GitHub Pages
-
-1. 在 `package.json` 中添加 homepage 字段
-```json
-{
-  "homepage": "https://your-username.github.io/llm-web-bench"
-}
-```
-
-2. 安装 `gh-pages` 包
-```bash
-npm install --save-dev gh-pages
-```
-
-3. 在 `package.json` 的 scripts 中添加部署命令
-```json
-{
-  "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
-  }
-}
-```
-
-4. 部署到 GitHub Pages
-```bash
-npm run deploy
-```
 
 ## 使用说明
 
 1. **配置API端点**
    - 在配置卡片中输入API端点（例如：http://192.168.31.34:8080/）
    - 设置并发请求数（默认为1）
+   - 输入GPU相关信息（型号、数量、每小时成本）
 
 2. **选择任务类型**
    - 在配置卡片中的"选择任务类型"部分，可以看到所有可用的任务类型
@@ -142,11 +80,11 @@ npm run deploy
    [
      {
        "question": "问题1",
-       "answer": "答案1"
+       "expectedAnswer": "答案1"
      },
      {
        "question": "问题2",
-       "answer": "答案2"
+       "expectedAnswer": "答案2"
      }
    ]
    ```
@@ -165,15 +103,24 @@ npm run deploy
 4. 测试过程中请勿关闭页面，以免中断测试
 5. 必须至少选择一个任务类型才能开始测试
 6. 添加自定义任务后，新的任务类型会自动被选中
+7. 请确保输入正确的GPU信息以获得准确的成本分析
 
 ## 技术栈
 
-- React
+- React 18
 - TypeScript
 - Ant Design
-- Recharts
-- Tiktoken
+- Recharts (数据可视化)
+- Tiktoken (Token计算)
 
 ## 许可证
 
 MIT
+
+## 作者
+
+[pp5ee](https://github.com/pp5ee)
+
+## 项目地址
+
+[LLMWebBench](https://github.com/pp5ee/LLMWebBench)
