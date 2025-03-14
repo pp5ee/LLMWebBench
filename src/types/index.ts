@@ -45,6 +45,10 @@ export interface CostSummary {
   totalCost: number;
   totalDuration: number;
   totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  inputDuration: number;
+  outputDuration: number;
   costPerCategory: Record<string, number>;
   costPerTokenCategory: Record<string, number>;
 } 
