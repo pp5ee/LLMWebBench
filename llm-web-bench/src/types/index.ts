@@ -44,5 +44,7 @@ export interface GPUInfo {
 export interface CostSummary {
   totalCost: number;
   totalDuration: number;
+  totalTokens: number;
   costPerCategory: Record<string, number>;
+  costPerTokenCategory: Record<string, number>;
 } 

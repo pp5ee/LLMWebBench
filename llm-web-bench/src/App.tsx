@@ -29,7 +29,9 @@ const App: React.FC = () => {
   const [costSummary, setCostSummary] = useState<CostSummary>({
     totalCost: 0,
     totalDuration: 0,
-    costPerCategory: {}
+    totalTokens: 0,
+    costPerCategory: {},
+    costPerTokenCategory: {}
   });
 
   const handleAddCustomTask = (values: any) => {
@@ -51,18 +53,32 @@ const App: React.FC = () => {
   const calculateCosts = (results: BenchmarkResults) => {
     const costPerCategory: Record<string, number> = {};
     let totalDuration = 0;
+    let totalTokens = 0;
+    const costPerTokenCategory: Record<string, number> = {};
 
     Object.entries(results).forEach(([category, data]) => {
       const categoryDuration = data.results.reduce((sum, result) => sum + (result.duration || 0), 0) / 1000; // 转换为秒
       totalDuration += categoryDuration;
-      costPerCategory[category] = (categoryDuration / 3600) * gpuInfo.costPerHour * gpuInfo.count;
+      
+      // 计算该类别的总token数
+      const categoryTokens = data.totalTokens;
+      totalTokens += categoryTokens;
+      
+      // 计算该类别的总成本
+      const categoryCost = (categoryDuration / 3600) * gpuInfo.costPerHour * gpuInfo.count;
+      costPerCategory[category] = categoryCost;
+      
+      // 计算每1k token的成本
+      costPerTokenCategory[category] = categoryTokens > 0 ? (categoryCost * 1000) / categoryTokens : 0;
     });
 
     const totalCost = Object.values(costPerCategory).reduce((sum, cost) => sum + cost, 0);
     setCostSummary({
       totalCost,
       totalDuration,
-      costPerCategory
+      totalTokens,
+      costPerCategory,
+      costPerTokenCategory
     });
   };
 
@@ -302,22 +318,24 @@ const App: React.FC = () => {
                   columns={costColumns}
                   dataSource={Object.entries(costSummary.costPerCategory).map(([category, cost]) => ({
                     categoryName: category,
-                    totalTokens: 0,
-                    totalDuration: 0,
-                    costPer1kTokens: cost,
-                    totalCost: 0
+                    totalTokens: results[category]?.totalTokens || 0,
+                    totalDuration: results[category]?.results.reduce((sum, r) => sum + (r.duration || 0), 0) / 1000 || 0,
+                    costPer1kTokens: costSummary.costPerTokenCategory[category] || 0,
+                    totalCost: cost
                   }))}
                   pagination={false}
                   summary={(pageData) => {
                     const totalCost = pageData.reduce((sum, item) => sum + item.totalCost, 0);
                     const totalTokens = pageData.reduce((sum, item) => sum + item.totalTokens, 0);
+                    const avgCostPer1kTokens = totalTokens > 0 ? (totalCost * 1000) / totalTokens : 0;
+                    
                     return (
                       <Table.Summary fixed>
                         <Table.Summary.Row>
                           <Table.Summary.Cell index={0}>总计</Table.Summary.Cell>
                           <Table.Summary.Cell index={1}>{totalTokens.toLocaleString()}</Table.Summary.Cell>
-                          <Table.Summary.Cell index={2}>-</Table.Summary.Cell>
-                          <Table.Summary.Cell index={3}>-</Table.Summary.Cell>
+                          <Table.Summary.Cell index={2}>{costSummary.totalDuration.toFixed(2)}</Table.Summary.Cell>
+                          <Table.Summary.Cell index={3}>{avgCostPer1kTokens.toFixed(4)}</Table.Summary.Cell>
                           <Table.Summary.Cell index={4}>{totalCost.toFixed(4)}</Table.Summary.Cell>
                         </Table.Summary.Row>
                       </Table.Summary>
@@ -328,6 +346,8 @@ const App: React.FC = () => {
 
               <Card title="总体成本统计">
                 <p>总运行时间: {costSummary.totalDuration.toFixed(2)} 秒</p>
+                <p>总Token数: {costSummary.totalTokens.toLocaleString()}</p>
+                <p>平均每1k Token成本: {costSummary.totalTokens > 0 ? ((costSummary.totalCost * 1000) / costSummary.totalTokens).toFixed(4) : '0.0000'} CNY</p>
                 <p>总成本: {costSummary.totalCost.toFixed(4)} CNY</p>
               </Card>
             </>
