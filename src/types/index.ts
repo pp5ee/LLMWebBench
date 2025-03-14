@@ -1,30 +1,25 @@
 export interface Task {
   question: string;
-  answer: string;
+  expectedAnswer: string;
 }
 
-export interface TaskResult {
+export interface TaskResult extends Task {
   success: boolean;
-  question: string;
-  expectedAnswer: string;
-  actualAnswer?: string;
-  error?: string;
-  duration?: number;
+  actualAnswer: string;
+  duration: number;
   inputTokens?: number;
   outputTokens?: number;
-  tokensPerSecond?: number;
 }
 
 export interface CategoryResults {
-  [key: string]: TaskResult[];
+  results: TaskResult[];
+  accuracy: number;
+  averageTokensPerSecond: number;
+  totalTokens: number;
 }
 
 export interface BenchmarkResults {
-  [key: string]: {
-    results: TaskResult[];
-    accuracy: number;
-    averageTokensPerSecond: number;
-  };
+  [category: string]: CategoryResults;
 }
 
 export interface CustomTask {
@@ -32,4 +27,24 @@ export interface CustomTask {
   tasks: Task[];
 }
 
-export type TaskCategories = 'math' | 'logic' | 'qa' | 'code' | 'text' | string; 
+export enum TaskCategories {
+  Math = 'math',
+  Logic = 'logic',
+  QA = 'qa',
+  Code = 'code',
+  Text = 'text'
+}
+
+export interface GPUInfo {
+  model: string;
+  count: number;
+  costPerHour: number;
+}
+
+export interface CostSummary {
+  totalCost: number;
+  totalDuration: number;
+  totalTokens: number;
+  costPerCategory: Record<string, number>;
+  costPerTokenCategory: Record<string, number>;
+} 
