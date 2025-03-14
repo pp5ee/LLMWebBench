@@ -225,28 +225,36 @@ const App: React.FC = () => {
                   min={1}
                 />
               </Form.Item>
-              <Form.Item label="GPU信息">
-                <Space>
-                  <Input
-                    placeholder="GPU型号"
-                    value={gpuInfo.model}
-                    onChange={e => setGpuInfo(prev => ({ ...prev, model: e.target.value }))}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="GPU数量"
-                    value={gpuInfo.count}
-                    min={1}
-                    onChange={e => setGpuInfo(prev => ({ ...prev, count: Number(e.target.value) }))}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="每小时成本(CNY)"
-                    value={gpuInfo.costPerHour}
-                    min={0}
-                    step={0.01}
-                    onChange={e => setGpuInfo(prev => ({ ...prev, costPerHour: Number(e.target.value) }))}
-                  />
+              <Form.Item label="GPU信息" required>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                    请输入GPU信息以计算推理成本:
+                  </div>
+                  <Space>
+                    <Input
+                      placeholder="GPU型号"
+                      value={gpuInfo.model}
+                      style={{ width: 150 }}
+                      onChange={e => setGpuInfo(prev => ({ ...prev, model: e.target.value }))}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="GPU数量"
+                      value={gpuInfo.count}
+                      style={{ width: 120 }}
+                      min={1}
+                      onChange={e => setGpuInfo(prev => ({ ...prev, count: Number(e.target.value) }))}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="每小时成本(CNY)"
+                      value={gpuInfo.costPerHour}
+                      style={{ width: 150 }}
+                      min={0}
+                      step={0.01}
+                      onChange={e => setGpuInfo(prev => ({ ...prev, costPerHour: Number(e.target.value) }))}
+                    />
+                  </Space>
                 </Space>
               </Form.Item>
               <Form.Item label="选择任务类型">
