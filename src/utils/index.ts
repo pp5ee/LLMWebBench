@@ -32,14 +32,21 @@ export function countTokens(text: string): number {
 }
 
 // 执行单个任务
-export async function executeTask(endpoint: string, task: Task): Promise<TaskResult> {
+export async function executeTask(endpoint: string, task: Task, apiKey?: string): Promise<TaskResult> {
   const startTime = Date.now();
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // 如果提供了API Key，则添加到请求头
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         messages: [{ role: "user", content: task.question }],
         temperature: 0.7,
@@ -79,13 +86,14 @@ export async function executeTask(endpoint: string, task: Task): Promise<TaskRes
 export async function executeTasksConcurrently(
   endpoint: string,
   tasks: Task[],
-  concurrency: number
+  concurrency: number,
+  apiKey?: string
 ): Promise<TaskResult[]> {
   const results: TaskResult[] = [];
   for (let i = 0; i < tasks.length; i += concurrency) {
     const batch = tasks.slice(i, i + concurrency);
     const batchResults = await Promise.all(
-      batch.map(task => executeTask(endpoint, task))
+      batch.map(task => executeTask(endpoint, task, apiKey))
     );
     results.push(...batchResults);
   }

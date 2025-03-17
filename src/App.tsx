@@ -12,6 +12,7 @@ const TASK_CATEGORIES = Object.values(TaskCategories);
 
 const App: React.FC = () => {
   const [endpoint, setEndpoint] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [concurrency, setConcurrency] = useState(1);
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [results, setResults] = useState<BenchmarkResults>({});
@@ -264,7 +265,7 @@ const App: React.FC = () => {
 
         if (tasks.length === 0) continue;
 
-        const results = await executeTasksConcurrently(endpoint, tasks, concurrency);
+        const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined);
         
         // 计算该类别的统计信息
         const accuracy = calculateAccuracy(results);
@@ -423,6 +424,24 @@ const App: React.FC = () => {
                   placeholder="例如: http://192.168.31.34:8080/"
                 />
               </Form.Item>
+              
+              <Form.Item 
+                label={
+                  <Space>
+                    API Key
+                    <Tooltip title="可选项。如果您的API需要认证，请输入API Key。将作为Authorization头发送。">
+                      <QuestionCircleOutlined style={{ color: '#1890ff' }} />
+                    </Tooltip>
+                  </Space>
+                } 
+              >
+                <Input.Password
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder="可选，如需认证请输入API Key"
+                />
+              </Form.Item>
+              
               <Form.Item 
                 label={
                   <Space>
