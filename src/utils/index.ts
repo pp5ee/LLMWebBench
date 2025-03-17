@@ -79,18 +79,42 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
     
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
-    const inputTokens = countTokens(task.question);
-    const outputTokens = countTokens(data.choices[0].message.content);
+    
+    // 从响应中获取token信息
+    let inputTokens = 0;
+    let outputTokens = 0;
+    
+    // 检查响应中是否包含usage信息
+    if (data.usage) {
+      inputTokens = data.usage.prompt_tokens || 0;
+      outputTokens = data.usage.completion_tokens || 0;
+    } else {
+      // 如果没有usage信息，则使用tiktoken估算
+      inputTokens = countTokens(task.question);
+      outputTokens = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content 
+        ? countTokens(data.choices[0].message.content) 
+        : 0;
+    }
+    
     const totalTokens = inputTokens + outputTokens;
     const tokensPerSecond = totalTokens / duration;
 
     console.log(`任务完成，耗时: ${duration}秒，输入tokens: ${inputTokens}，输出tokens: ${outputTokens}`);
 
+    // 检查响应格式并提取实际答案
+    let actualAnswer = '';
+    if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+      actualAnswer = data.choices[0].message.content;
+    } else {
+      console.warn('响应格式不符合预期，无法提取实际答案');
+      throw new Error('响应格式不符合预期');
+    }
+
     return {
       success: true,
       question: task.question,
       expectedAnswer: task.expectedAnswer,
-      actualAnswer: data.choices[0].message.content,
+      actualAnswer,
       duration,
       inputTokens,
       outputTokens,
@@ -102,6 +126,7 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
       success: false,
       question: task.question,
       expectedAnswer: task.expectedAnswer,
+      actualAnswer: '执行失败',
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
@@ -128,8 +153,9 @@ export async function executeTasksConcurrently(
 
 // 计算准确率
 export function calculateAccuracy(results: TaskResult[]): number {
+  // 只有success为true的任务才被视为成功
   const successful = results.filter(r => r.success).length;
-  return (successful / results.length) * 100;
+  return results.length > 0 ? (successful / results.length) * 100 : 0;
 }
 
 // 计算平均token/s

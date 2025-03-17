@@ -168,7 +168,7 @@ const App: React.FC = () => {
       totalDuration += categoryDuration;
       
       // 计算该类别的总token数
-      const categoryTokens = data.totalTokens;
+      const categoryTokens = data.totalTokens || 0;
       totalTokens += categoryTokens;
       
       // 计算输入和输出token数量
@@ -280,40 +280,59 @@ const App: React.FC = () => {
           continue;
         }
 
-        console.log(`开始执行 ${category} 类别的任务，共 ${tasks.length} 个任务，并发数 ${concurrency}`);
-        const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
-        console.log(`${category} 类别的任务执行完成，成功率: ${calculateAccuracy(results)}%`);
-        
-        // 计算该类别的统计信息
-        const accuracy = calculateAccuracy(results);
-        const avgTokensPerSecond = calculateAverageTokensPerSecond(results);
-        
-        // 累计总时间和总token数
-        const categoryDuration = results.reduce((sum, r) => sum + (r.duration || 0), 0);
-        const categoryTokens = results.reduce((sum, r) => sum + ((r.inputTokens || 0) + (r.outputTokens || 0)), 0);
-        const categoryInputTokens = results.reduce((sum, r) => sum + (r.inputTokens || 0), 0);
-        const categoryOutputTokens = results.reduce((sum, r) => sum + (r.outputTokens || 0), 0);
-        
-        totalDuration += categoryDuration;
-        totalTokens += categoryTokens;
-        inputTokens += categoryInputTokens;
-        outputTokens += categoryOutputTokens;
-        
-        console.log(`${category} 类别统计: 耗时 ${categoryDuration.toFixed(2)}秒, 总tokens ${categoryTokens}, 输入tokens ${categoryInputTokens}, 输出tokens ${categoryOutputTokens}`);
-        
-        // 计算该类别的成本
-        const categoryCost = calculateCategoryGPUCost(categoryDuration, gpuInfo);
-        costPerCategory[category] = categoryCost;
-        
-        // 计算该类别的token成本
-        costPerTokenCategory[category] = categoryTokens;
-        
-        allResults[category] = {
-          results,
-          accuracy,
-          avgTokensPerSecond,
-          totalTokens: categoryTokens
-        };
+        try {
+          console.log(`开始执行 ${category} 类别的任务，共 ${tasks.length} 个任务，并发数 ${concurrency}`);
+          const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
+          console.log(`${category} 类别的任务执行完成，成功率: ${calculateAccuracy(results)}%`);
+          
+          // 计算该类别的统计信息
+          const accuracy = calculateAccuracy(results);
+          const avgTokensPerSecond = calculateAverageTokensPerSecond(results);
+          
+          // 累计总时间和总token数
+          const categoryDuration = results.reduce((sum, r) => sum + (r.duration || 0), 0);
+          const categoryTokens = results.reduce((sum, r) => sum + ((r.inputTokens || 0) + (r.outputTokens || 0)), 0);
+          const categoryInputTokens = results.reduce((sum, r) => sum + (r.inputTokens || 0), 0);
+          const categoryOutputTokens = results.reduce((sum, r) => sum + (r.outputTokens || 0), 0);
+          
+          totalDuration += categoryDuration;
+          totalTokens += categoryTokens;
+          inputTokens += categoryInputTokens;
+          outputTokens += categoryOutputTokens;
+          
+          console.log(`${category} 类别统计: 耗时 ${categoryDuration.toFixed(2)}秒, 总tokens ${categoryTokens}, 输入tokens ${categoryInputTokens}, 输出tokens ${categoryOutputTokens}`);
+          
+          // 计算该类别的成本
+          const categoryCost = calculateCategoryGPUCost(categoryDuration, gpuInfo);
+          costPerCategory[category] = categoryCost;
+          
+          // 计算该类别的token成本
+          costPerTokenCategory[category] = categoryTokens;
+          
+          allResults[category] = {
+            results,
+            accuracy,
+            avgTokensPerSecond,
+            totalTokens: categoryTokens
+          };
+        } catch (categoryError) {
+          console.error(`执行 ${category} 类别任务时出错:`, categoryError);
+          message.error(`执行 ${category} 类别任务时出错: ${categoryError instanceof Error ? categoryError.message : '未知错误'}`);
+          
+          // 即使出错，也添加结果，但标记为失败
+          allResults[category] = {
+            results: tasks.map(task => ({
+              success: false,
+              question: task.question,
+              expectedAnswer: task.expectedAnswer,
+              actualAnswer: '执行失败',
+              error: categoryError instanceof Error ? categoryError.message : '未知错误'
+            })),
+            accuracy: 0,
+            avgTokensPerSecond: 0,
+            totalTokens: 0
+          };
+        }
       }
       
       // 计算总体成本
@@ -345,6 +364,12 @@ const App: React.FC = () => {
       setCostSummary(costSummaryData);
       
       setResults(allResults);
+      
+      if (Object.keys(allResults).length === 0) {
+        message.warning('没有任何任务被执行，请检查任务类型选择和API配置');
+      } else {
+        message.success('基准测试完成!');
+      }
     } catch (error) {
       console.error('执行基准测试时出错:', error);
       message.error(`执行基准测试时出错: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -355,7 +380,7 @@ const App: React.FC = () => {
 
   const chartData = results ? Object.entries(results).map(([category, data]) => ({
     category,
-    accuracy: data.accuracy,
+    successRate: data.accuracy,
     tokensPerSecond: data.avgTokensPerSecond
   })) : [];
 
@@ -374,6 +399,11 @@ const App: React.FC = () => {
       title: '实际答案',
       dataIndex: 'actualAnswer',
       key: 'actualAnswer',
+      render: (text: string) => (
+        <div style={{ maxHeight: '150px', overflow: 'auto' }}>
+          {text}
+        </div>
+      ),
     },
     {
       title: '状态',
@@ -389,6 +419,18 @@ const App: React.FC = () => {
       dataIndex: 'tokensPerSecond',
       key: 'tokensPerSecond',
       render: (value: number) => value?.toFixed(2) || '-',
+    },
+    {
+      title: '错误信息',
+      dataIndex: 'error',
+      key: 'error',
+      render: (error: string) => error ? (
+        <Tooltip title={error}>
+          <span style={{ color: 'red', cursor: 'pointer' }}>
+            {error.length > 30 ? `${error.substring(0, 30)}...` : error}
+          </span>
+        </Tooltip>
+      ) : '-',
     },
   ];
 
@@ -655,14 +697,18 @@ const App: React.FC = () => {
                   <YAxis yAxisId="right" orientation="right" />
                   <RechartsTooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="accuracy" name="准确率 (%)" fill="#8884d8" />
+                  <Bar yAxisId="left" dataKey="successRate" name="成功率 (%)" fill="#8884d8" />
                   <Bar yAxisId="right" dataKey="tokensPerSecond" name="Token/s" fill="#82ca9d" />
                 </BarChart>
               </Card>
 
               {Object.entries(results).map(([category, data]) => (
                 <Card key={category} title={`${category} 类别结果`}>
-                  <Progress percent={data.accuracy} status="active" />
+                  <Progress 
+                    percent={data.accuracy} 
+                    status="active" 
+                    format={percent => percent ? `成功率: ${percent.toFixed(2)}%` : '0%'} 
+                  />
                   <Table
                     columns={columns}
                     dataSource={data.results}
@@ -794,7 +840,7 @@ const App: React.FC = () => {
                         <Cell fill="#8884d8" />
                         <Cell fill="#82ca9d" />
                       </Pie>
-                      <RechartsTooltip formatter={(value) => `${value.toFixed(2)} 秒`} />
+                      <RechartsTooltip formatter={(value: any) => typeof value === 'number' ? `${value.toFixed(2)} 秒` : value} />
                       <Legend />
                     </PieChart>
                   </div>
@@ -818,7 +864,7 @@ const App: React.FC = () => {
                         <Cell fill="#8884d8" />
                         <Cell fill="#82ca9d" />
                       </Pie>
-                      <RechartsTooltip formatter={(value) => `${value.toFixed(4)} CNY`} />
+                      <RechartsTooltip formatter={(value: any) => typeof value === 'number' ? `${value.toFixed(4)} CNY` : value} />
                       <Legend />
                     </PieChart>
                   </div>
