@@ -13,6 +13,7 @@ const TASK_CATEGORIES = Object.values(TaskCategories);
 const App: React.FC = () => {
   const [endpoint, setEndpoint] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [modelName, setModelName] = useState('');
   const [concurrency, setConcurrency] = useState(1);
   const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
   const [results, setResults] = useState<BenchmarkResults>({});
@@ -265,7 +266,7 @@ const App: React.FC = () => {
 
         if (tasks.length === 0) continue;
 
-        const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined);
+        const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
         
         // 计算该类别的统计信息
         const accuracy = calculateAccuracy(results);
@@ -439,6 +440,23 @@ const App: React.FC = () => {
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder="可选，如需认证请输入API Key"
+                />
+              </Form.Item>
+              
+              <Form.Item 
+                label={
+                  <Space>
+                    模型名称
+                    <Tooltip title="可选项。输入要使用的模型名称，例如：gpt-4o-mini。将作为请求体中的model字段发送。">
+                      <QuestionCircleOutlined style={{ color: '#1890ff' }} />
+                    </Tooltip>
+                  </Space>
+                } 
+              >
+                <Input
+                  value={modelName}
+                  onChange={e => setModelName(e.target.value)}
+                  placeholder="可选，例如：gpt-4o-mini"
                 />
               </Form.Item>
               
