@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Input, Button, Form, Card, Table, Progress, message, Space, Checkbox, Divider, Tooltip, Modal } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { defaultTasks, executeTasksConcurrently, calculateAccuracy, calculateAverageTokensPerSecond } from './utils';
 import { Task, TaskResult, BenchmarkResults, CustomTask, TaskCategories, GPUInfo, CostSummary } from './types';
+import webSocketClient from './utils/WebSocketClient';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
@@ -36,6 +37,26 @@ const App: React.FC = () => {
     costPerCategory: {},
     costPerTokenCategory: {}
   });
+
+  // 在组件挂载时连接WebSocket
+  useEffect(() => {
+    // 连接WebSocket
+    webSocketClient.connect();
+    
+    // 添加消息处理器
+    const handleMessage = (message: any) => {
+      console.log('收到WebSocket消息:', message);
+      // 这里可以处理从服务器接收到的消息
+    };
+    
+    webSocketClient.addMessageHandler(handleMessage);
+    
+    // 在组件卸载时断开WebSocket连接
+    return () => {
+      webSocketClient.removeMessageHandler(handleMessage);
+      webSocketClient.disconnect();
+    };
+  }, []);
 
   const showTaskExamples = (category: TaskCategories) => {
     const tasks = defaultTasks[category].slice(0, 5); // 只显示前5个任务作为示例
@@ -242,6 +263,21 @@ const App: React.FC = () => {
     console.log('选定的任务类型:', selectedTaskTypes);
     if (apiKey) console.log('已提供API Key');
     if (modelName) console.log('使用模型:', modelName);
+    
+    // 通过WebSocket发送测试开始消息
+    if (webSocketClient.isConnected) {
+      webSocketClient.sendMessage({
+        type: 'benchmark_start',
+        data: {
+          endpoint,
+          concurrency,
+          selectedTaskTypes,
+          gpuInfo,
+          hasApiKey: !!apiKey,
+          modelName: modelName || null
+        }
+      });
+    }
 
     setLoading(true);
     setResults({});
@@ -280,6 +316,17 @@ const App: React.FC = () => {
           continue;
         }
 
+        // 通过WebSocket发送类别开始消息
+        if (webSocketClient.isConnected) {
+          webSocketClient.sendMessage({
+            type: 'category_start',
+            data: {
+              category,
+              taskCount: tasks.length
+            }
+          });
+        }
+
         console.log(`开始执行 ${category} 类别的任务，共 ${tasks.length} 个任务，并发数 ${concurrency}`);
         const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
         console.log(`${category} 类别的任务执行完成，成功率: ${calculateAccuracy(results)}%`);
@@ -314,6 +361,23 @@ const App: React.FC = () => {
           avgTokensPerSecond,
           totalTokens: categoryTokens
         };
+        
+        // 通过WebSocket发送类别完成消息
+        if (webSocketClient.isConnected) {
+          webSocketClient.sendMessage({
+            type: 'category_complete',
+            data: {
+              category,
+              accuracy,
+              avgTokensPerSecond,
+              categoryDuration,
+              categoryTokens,
+              categoryInputTokens,
+              categoryOutputTokens,
+              categoryCost
+            }
+          });
+        }
       }
       
       // 计算总体成本
@@ -330,7 +394,7 @@ const App: React.FC = () => {
       console.log(`总成本: ${totalCost.toFixed(4)} CNY`);
       
       // 更新成本摘要
-      setCostSummary({
+      const costSummaryData = {
         totalCost,
         totalDuration,
         totalTokens,
@@ -340,12 +404,35 @@ const App: React.FC = () => {
         outputDuration,
         costPerCategory,
         costPerTokenCategory
-      });
+      };
+      
+      setCostSummary(costSummaryData);
       
       setResults(allResults);
+      
+      // 通过WebSocket发送测试完成消息
+      if (webSocketClient.isConnected) {
+        webSocketClient.sendMessage({
+          type: 'benchmark_complete',
+          data: {
+            costSummary: costSummaryData,
+            results: allResults
+          }
+        });
+      }
     } catch (error) {
       console.error('执行基准测试时出错:', error);
       message.error(`执行基准测试时出错: ${error instanceof Error ? error.message : '未知错误'}`);
+      
+      // 通过WebSocket发送错误消息
+      if (webSocketClient.isConnected) {
+        webSocketClient.sendMessage({
+          type: 'benchmark_error',
+          data: {
+            error: error instanceof Error ? error.message : '未知错误'
+          }
+        });
+      }
     } finally {
       setLoading(false);
     }

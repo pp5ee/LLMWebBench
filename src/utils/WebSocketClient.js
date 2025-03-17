@@ -18,10 +18,11 @@ class WebSocketClient {
     // 自动识别当前网址的协议、主机名和端口
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
+    // 使用当前页面的端口号，而不是默认端口
+    const port = window.location.port;
     
     // 构建WebSocket URL
-    const wsUrl = `${protocol}//${host}:${port}/ws`;
+    const wsUrl = `${protocol}//${host}${port ? ':' + port : ''}/ws`;
     
     console.log(`正在连接WebSocket: ${wsUrl}`);
     
