@@ -5,17 +5,19 @@ export interface Task {
 
 export interface TaskResult extends Task {
   success: boolean;
-  actualAnswer: string;
-  duration: number;
+  actualAnswer?: string;
+  duration?: number;
   inputTokens?: number;
   outputTokens?: number;
+  tokensPerSecond?: number;
+  error?: string;
 }
 
 export interface CategoryResults {
   results: TaskResult[];
   accuracy: number;
-  averageTokensPerSecond: number;
-  totalTokens: number;
+  avgTokensPerSecond: number;
+  totalTokens?: number;
 }
 
 export interface BenchmarkResults {

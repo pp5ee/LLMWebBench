@@ -236,6 +236,13 @@ const App: React.FC = () => {
       return;
     }
 
+    console.log('开始执行基准测试...');
+    console.log('API端点:', endpoint);
+    console.log('并发数:', concurrency);
+    console.log('选定的任务类型:', selectedTaskTypes);
+    if (apiKey) console.log('已提供API Key');
+    if (modelName) console.log('使用模型:', modelName);
+
     setLoading(true);
     setResults({});
 
@@ -250,6 +257,8 @@ const App: React.FC = () => {
 
       // 处理所有选定的任务类型
       for (const category of selectedTaskTypes) {
+        console.log(`开始处理 ${category} 类别的任务...`);
+        
         // 获取任务列表 - 从默认任务或自定义任务中获取
         let tasks: Task[];
         
@@ -259,29 +268,38 @@ const App: React.FC = () => {
         if (customTaskEntry) {
           // 使用自定义任务
           tasks = customTaskEntry.tasks;
+          console.log(`使用自定义任务，共 ${tasks.length} 个任务`);
         } else {
           // 使用默认任务
           tasks = defaultTasks[category as keyof typeof defaultTasks] || [];
+          console.log(`使用默认任务，共 ${tasks.length} 个任务`);
         }
 
-        if (tasks.length === 0) continue;
+        if (tasks.length === 0) {
+          console.log(`${category} 类别没有任务，跳过`);
+          continue;
+        }
 
+        console.log(`开始执行 ${category} 类别的任务，共 ${tasks.length} 个任务，并发数 ${concurrency}`);
         const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
+        console.log(`${category} 类别的任务执行完成，成功率: ${calculateAccuracy(results)}%`);
         
         // 计算该类别的统计信息
         const accuracy = calculateAccuracy(results);
         const avgTokensPerSecond = calculateAverageTokensPerSecond(results);
         
         // 累计总时间和总token数
-        const categoryDuration = results.reduce((sum, r) => sum + r.duration, 0);
-        const categoryTokens = results.reduce((sum, r) => sum + r.inputTokens + r.outputTokens, 0);
-        const categoryInputTokens = results.reduce((sum, r) => sum + r.inputTokens, 0);
-        const categoryOutputTokens = results.reduce((sum, r) => sum + r.outputTokens, 0);
+        const categoryDuration = results.reduce((sum, r) => sum + (r.duration || 0), 0);
+        const categoryTokens = results.reduce((sum, r) => sum + ((r.inputTokens || 0) + (r.outputTokens || 0)), 0);
+        const categoryInputTokens = results.reduce((sum, r) => sum + (r.inputTokens || 0), 0);
+        const categoryOutputTokens = results.reduce((sum, r) => sum + (r.outputTokens || 0), 0);
         
         totalDuration += categoryDuration;
         totalTokens += categoryTokens;
         inputTokens += categoryInputTokens;
         outputTokens += categoryOutputTokens;
+        
+        console.log(`${category} 类别统计: 耗时 ${categoryDuration.toFixed(2)}秒, 总tokens ${categoryTokens}, 输入tokens ${categoryInputTokens}, 输出tokens ${categoryOutputTokens}`);
         
         // 计算该类别的成本
         const categoryCost = calculateCategoryGPUCost(categoryDuration, gpuInfo);
@@ -293,7 +311,8 @@ const App: React.FC = () => {
         allResults[category] = {
           results,
           accuracy,
-          avgTokensPerSecond
+          avgTokensPerSecond,
+          totalTokens: categoryTokens
         };
       }
       
@@ -305,6 +324,10 @@ const App: React.FC = () => {
       const outputRatio = outputTokens / (totalTokens || 1);
       const inputDuration = totalDuration * inputRatio;
       const outputDuration = totalDuration * outputRatio;
+      
+      console.log('基准测试完成!');
+      console.log(`总耗时: ${totalDuration.toFixed(2)}秒, 总tokens: ${totalTokens}, 输入tokens: ${inputTokens}, 输出tokens: ${outputTokens}`);
+      console.log(`总成本: ${totalCost.toFixed(4)} CNY`);
       
       // 更新成本摘要
       setCostSummary({
@@ -322,7 +345,7 @@ const App: React.FC = () => {
       setResults(allResults);
     } catch (error) {
       console.error('执行基准测试时出错:', error);
-      message.error('执行基准测试时出错');
+      message.error(`执行基准测试时出错: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setLoading(false);
     }

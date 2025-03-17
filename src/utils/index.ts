@@ -5,23 +5,23 @@ import { Task, TaskResult, TaskCategories } from '../types';
 export const defaultTasks: Record<TaskCategories, Task[]> = {
   math: Array(30).fill(null).map((_, i) => ({
     question: `计算 ${i + 1} 的平方根，保留两位小数`,
-    answer: Math.sqrt(i + 1).toFixed(2)
+    expectedAnswer: Math.sqrt(i + 1).toFixed(2)
   })),
   logic: Array(30).fill(null).map((_, i) => ({
     question: `如果 A = ${i + 1}, B = ${i + 2}, 那么 A + B 等于多少？`,
-    answer: (i + 1 + i + 2).toString()
+    expectedAnswer: (i + 1 + i + 2).toString()
   })),
   qa: Array(30).fill(null).map((_, i) => ({
     question: `第 ${i + 1} 个字母是什么？`,
-    answer: String.fromCharCode(65 + i)
+    expectedAnswer: String.fromCharCode(65 + i)
   })),
   code: Array(30).fill(null).map((_, i) => ({
     question: `写一个函数计算 ${i + 1} 的阶乘`,
-    answer: `function factorial(n) { return n <= 1 ? 1 : n * factorial(n-1); }`
+    expectedAnswer: `function factorial(n) { return n <= 1 ? 1 : n * factorial(n-1); }`
   })),
   text: Array(30).fill(null).map((_, i) => ({
     question: `用一句话描述数字 ${i + 1}`,
-    answer: `这是一个${i + 1}`
+    expectedAnswer: `这是一个${i + 1}`
   }))
 };
 
@@ -35,6 +35,9 @@ export function countTokens(text: string): number {
 export async function executeTask(endpoint: string, task: Task, apiKey?: string, modelName?: string): Promise<TaskResult> {
   const startTime = Date.now();
   try {
+    console.log(`开始执行任务: ${task.question}`);
+    console.log(`API端点: ${endpoint}`);
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -42,6 +45,7 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
     // 如果提供了API Key，则添加到请求头
     if (apiKey) {
       headers['Authorization'] = `Bearer ${apiKey}`;
+      console.log('已添加API Key到请求头');
     }
     
     // 构建请求体
@@ -54,15 +58,25 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
     // 如果提供了模型名称，则添加到请求体
     if (modelName) {
       requestBody.model = modelName;
+      console.log(`使用模型: ${modelName}`);
     }
+    
+    console.log('发送请求...');
+    console.log('请求体:', JSON.stringify(requestBody));
     
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(requestBody)
     });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+    }
 
     const data = await response.json();
+    console.log('收到响应:', data);
+    
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
     const inputTokens = countTokens(task.question);
@@ -70,10 +84,12 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
     const totalTokens = inputTokens + outputTokens;
     const tokensPerSecond = totalTokens / duration;
 
+    console.log(`任务完成，耗时: ${duration}秒，输入tokens: ${inputTokens}，输出tokens: ${outputTokens}`);
+
     return {
       success: true,
       question: task.question,
-      expectedAnswer: task.answer,
+      expectedAnswer: task.expectedAnswer,
       actualAnswer: data.choices[0].message.content,
       duration,
       inputTokens,
@@ -81,10 +97,11 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
       tokensPerSecond
     };
   } catch (error) {
+    console.error('执行任务时出错:', error);
     return {
       success: false,
       question: task.question,
-      expectedAnswer: task.answer,
+      expectedAnswer: task.expectedAnswer,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
