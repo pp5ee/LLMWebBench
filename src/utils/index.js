@@ -1,8 +1,8 @@
 import { encoding_for_model } from 'tiktoken';
-import { Task, TaskResult, TaskCategories } from '../types';
+import { TaskCategories } from '../types';
 
 // 默认测试任务
-export const defaultTasks: Record<TaskCategories, Task[]> = {
+export const defaultTasks = { /* category -> Task[] */
   math: Array(30).fill(null).map((_, i) => ({
     question: `计算 ${i + 1} 的平方根，保留两位小数`,
     expectedAnswer: Math.sqrt(i + 1).toFixed(2)
@@ -26,19 +26,19 @@ export const defaultTasks: Record<TaskCategories, Task[]> = {
 };
 
 // 计算token数量
-export function countTokens(text: string): number {
+export function countTokens(text) {
   const enc = encoding_for_model("gpt-3.5-turbo");
   return enc.encode(text).length;
 }
 
 // 执行单个任务
-export async function executeTask(endpoint: string, task: Task, apiKey?: string, modelName?: string): Promise<TaskResult> {
+export async function executeTask(endpoint, task, apiKey, modelName) {
   const startTime = Date.now();
   try {
     console.log(`开始执行任务: ${task.question}`);
     console.log(`API端点: ${endpoint}`);
     
-    const headers: Record<string, string> = {
+    const headers = {
       'Content-Type': 'application/json',
     };
     
@@ -49,7 +49,7 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
     }
     
     // 构建请求体
-    const requestBody: any = {
+    const requestBody = {
       messages: [{ role: "user", content: task.question }],
       temperature: 0.7,
       max_tokens: 1000
@@ -134,12 +134,12 @@ export async function executeTask(endpoint: string, task: Task, apiKey?: string,
 
 // 并发执行任务
 export async function executeTasksConcurrently(
-  endpoint: string,
-  tasks: Task[],
-  concurrency: number,
-  apiKey?: string,
-  modelName?: string
-): Promise<TaskResult[]> {
+  endpoint,
+  tasks,
+  concurrency,
+  apiKey,
+  modelName
+) {
   const results: TaskResult[] = [];
   for (let i = 0; i < tasks.length; i += concurrency) {
     const batch = tasks.slice(i, i + concurrency);
@@ -152,14 +152,14 @@ export async function executeTasksConcurrently(
 }
 
 // 计算准确率
-export function calculateAccuracy(results: TaskResult[]): number {
+export function calculateAccuracy(results) {
   // 只有success为true的任务才被视为成功
   const successful = results.filter(r => r.success).length;
   return results.length > 0 ? (successful / results.length) * 100 : 0;
 }
 
 // 计算平均token/s
-export function calculateAverageTokensPerSecond(results: TaskResult[]): number {
+export function calculateAverageTokensPerSecond(results) {
   const validResults = results.filter(r => r.tokensPerSecond !== undefined);
   if (validResults.length === 0) return 0;
   const sum = validResults.reduce((acc, r) => acc + (r.tokensPerSecond || 0), 0);
