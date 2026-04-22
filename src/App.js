@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Layout, Input, Button, Form, Card, Table, Progress, message, Space, Checkbox, Divider, Tooltip, Modal } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { Layout, Input, Button, Form, Card, Table, Progress, message, Space, Checkbox, Tooltip, Modal } from 'antd';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { defaultTasks, executeTasksConcurrently, calculateAccuracy, calculateAverageTokensPerSecond } from './utils';
 import { TaskCategories } from './types';
