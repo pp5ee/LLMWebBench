@@ -1,1 +1,8 @@
  node_modules
+
+# Humanize RLCR
+.humanize*
+# Build outputs
+build/
+# macOS junk
+.DS_Store
