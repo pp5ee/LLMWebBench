@@ -114,6 +114,14 @@ yarn start
 - Recharts (数据可视化)
 - Tiktoken (Token计算)
 
+## 开发与测试
+
+- 本项目已统一为纯 JavaScript（不使用 TypeScript），JSX 直接书写在 .js 文件中（CRA/React Scripts 默认支持）。
+- Node 版本：建议 Node 18+。
+- 开发：`npm start`
+- 构建：`npm run build`
+- 测试（CI 非交互）：`CI=true npm test -- --watchAll=false`
+
 ## 许可证
 
 MIT
