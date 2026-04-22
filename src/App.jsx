@@ -2,30 +2,30 @@ import React, { useState } from 'react';
 import { Layout, Input, Button, Form, Card, Table, Progress, message, Space, Checkbox, Divider, Tooltip, Modal } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { defaultTasks, executeTasksConcurrently, calculateAccuracy, calculateAverageTokensPerSecond } from './utils';
-import { Task, TaskResult, BenchmarkResults, CustomTask, TaskCategories, GPUInfo, CostSummary } from './types';
+import { defaultTasks, executeTasksConcurrently, calculateAccuracy, calculateAverageTokensPerSecond } from './utils/index';
+import { TaskCategories } from './types/index';
 
 const { Header, Content, Footer } = Layout;
 const { TextArea } = Input;
 
 const TASK_CATEGORIES = Object.values(TaskCategories);
 
-const App: React.FC = () => {
+const App = () => {
   const [endpoint, setEndpoint] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [modelName, setModelName] = useState('');
   const [concurrency, setConcurrency] = useState(1);
-  const [customTasks, setCustomTasks] = useState<CustomTask[]>([]);
-  const [results, setResults] = useState<BenchmarkResults>({});
+  const [customTasks, setCustomTasks] = useState([]);
+  const [results, setResults] = useState({});
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-  const [selectedTaskTypes, setSelectedTaskTypes] = useState<TaskCategories[]>(TASK_CATEGORIES);
-  const [gpuInfo, setGpuInfo] = useState<GPUInfo>({
+  const [selectedTaskTypes, setSelectedTaskTypes] = useState(TASK_CATEGORIES);
+  const [gpuInfo, setGpuInfo] = useState({
     model: '',
     count: 1,
     costPerHour: 0
   });
-  const [costSummary, setCostSummary] = useState<CostSummary>({
+  const [costSummary, setCostSummary] = useState({
     totalCost: 0,
     totalDuration: 0,
     totalTokens: 0,
@@ -37,7 +37,7 @@ const App: React.FC = () => {
     costPerTokenCategory: {}
   });
 
-  const showTaskExamples = (category: TaskCategories) => {
+  const showTaskExamples = (category) => {
     const tasks = defaultTasks[category].slice(0, 5); // 只显示前5个任务作为示例
     
     Modal.info({
@@ -87,9 +87,9 @@ const App: React.FC = () => {
 
   const [taskOptions, setTaskOptions] = useState(initialTaskOptions);
 
-  const handleAddCustomTask = (values: any) => {
+  const handleAddCustomTask = (values) => {
     try {
-      const tasks = JSON.parse(values.tasks) as Task[];
+      const tasks = JSON.parse(values.tasks);
       const customCategory = values.category;
       
       // 创建自定义任务选项，包括任务数量和查看按钮
@@ -149,11 +149,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleTaskTypeChange = (checkedValues: TaskCategories[]) => {
-    setSelectedTaskTypes(checkedValues);
-  };
+  // Note: reserved for future handler customizations
+// const handleTaskTypeChange = (checkedValues) => {
+//   setSelectedTaskTypes(checkedValues);
+// };
 
-  const calculateCosts = (results: BenchmarkResults) => {
+  // Reserved for potential post-processing of results
+  // const calculateCosts = (results) => {
     const costPerCategory: Record<string, number> = {};
     let totalDuration = 0;
     let totalTokens = 0;
@@ -208,7 +210,7 @@ const App: React.FC = () => {
   };
 
   // 计算GPU成本的函数
-  const calculateGPUCost = (durationMs: number, gpuInfo: GPUInfo): number => {
+  const calculateGPUCost = (durationMs, gpuInfo) => {
     // 将毫秒转换为小时
     const durationHours = durationMs / (1000 * 60 * 60);
     // 计算成本 = 时长(小时) * GPU数量 * 每小时成本
@@ -216,7 +218,7 @@ const App: React.FC = () => {
   };
 
   // 计算特定类别的GPU成本
-  const calculateCategoryGPUCost = (durationMs: number, gpuInfo: GPUInfo): number => {
+  const calculateCategoryGPUCost = (durationMs, gpuInfo) => {
     return calculateGPUCost(durationMs, gpuInfo);
   };
 
@@ -260,7 +262,7 @@ const App: React.FC = () => {
         console.log(`开始处理 ${category} 类别的任务...`);
         
         // 获取任务列表 - 从默认任务或自定义任务中获取
-        let tasks: Task[];
+        let tasks;
         
         // 检查是否是自定义任务类别
         const customTaskEntry = customTasks.find(ct => ct.category === category);
@@ -271,7 +273,7 @@ const App: React.FC = () => {
           console.log(`使用自定义任务，共 ${tasks.length} 个任务`);
         } else {
           // 使用默认任务
-          tasks = defaultTasks[category as keyof typeof defaultTasks] || [];
+          tasks = defaultTasks[category] || [];
           console.log(`使用默认任务，共 ${tasks.length} 个任务`);
         }
 
@@ -399,7 +401,7 @@ const App: React.FC = () => {
       title: '实际答案',
       dataIndex: 'actualAnswer',
       key: 'actualAnswer',
-      render: (text: string) => (
+      render: (text) => (
         <div style={{ maxHeight: '150px', overflow: 'auto' }}>
           {text}
         </div>
@@ -408,7 +410,7 @@ const App: React.FC = () => {
     {
       title: '状态',
       key: 'status',
-      render: (record: TaskResult) => (
+      render: (record) => (
         <span style={{ color: record.success ? 'green' : 'red' }}>
           {record.success ? '成功' : '失败'}
         </span>
@@ -418,13 +420,13 @@ const App: React.FC = () => {
       title: 'Token/s',
       dataIndex: 'tokensPerSecond',
       key: 'tokensPerSecond',
-      render: (value: number) => value?.toFixed(2) || '-',
+      render: (value) => (typeof value === 'number' ? value.toFixed(2) : '-') ,
     },
     {
       title: '错误信息',
       dataIndex: 'error',
       key: 'error',
-      render: (error: string) => error ? (
+      render: (error) => error ? (
         <Tooltip title={error}>
           <span style={{ color: 'red', cursor: 'pointer' }}>
             {error.length > 30 ? `${error.substring(0, 30)}...` : error}
@@ -444,25 +446,25 @@ const App: React.FC = () => {
       title: '总Token数',
       dataIndex: 'totalTokens',
       key: 'totalTokens',
-      render: (value: number) => value.toLocaleString(),
+      render: (value) => Number(value).toLocaleString(),
     },
     {
       title: '总耗时(秒)',
       dataIndex: 'totalDuration',
       key: 'totalDuration',
-      render: (value: number) => value.toFixed(2),
+      render: (value) => Number(value).toFixed(2),
     },
     {
       title: '每1k Token成本(CNY)',
       dataIndex: 'costPer1kTokens',
       key: 'costPer1kTokens',
-      render: (value: number) => value.toFixed(4),
+      render: (value) => Number(value).toFixed(4),
     },
     {
       title: '总成本(CNY)',
       dataIndex: 'totalCost',
       key: 'totalCost',
-      render: (value: number) => value.toFixed(4),
+      render: (value) => Number(value).toFixed(4),
     },
   ];
 
@@ -609,7 +611,7 @@ const App: React.FC = () => {
                 <Checkbox.Group
                   options={taskOptions}
                   value={selectedTaskTypes}
-                  onChange={(values) => setSelectedTaskTypes(values as TaskCategories[])}
+                  onChange={(values) => setSelectedTaskTypes(values)}
                 />
               </Form.Item>
               <Button type="primary" onClick={runBenchmark} loading={loading}>

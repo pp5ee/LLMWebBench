@@ -1,5 +1,6 @@
 import { encoding_for_model } from 'tiktoken';
-import { TaskCategories } from '../types';
+// (Optional) TaskCategories constants available via '../types'
+// import { TaskCategories } from '../types';
 
 // 默认测试任务
 export const defaultTasks = { /* category -> Task[] */
