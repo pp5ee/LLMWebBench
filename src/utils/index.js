@@ -12,7 +12,7 @@ export const defaultTasks = {
   })),
   qa: Array(30).fill(null).map((_, i) => ({
     question: `第 ${i + 1} 个字母是什么？`,
-    expectedAnswer: String.fromCharCode(65 + i)
+    expectedAnswer: String.fromCharCode(65 + (i % 26))
   })),
   code: Array(30).fill(null).map((_, i) => ({
     question: `写一个函数计算 ${i + 1} 的阶乘`,
@@ -25,15 +25,24 @@ export const defaultTasks = {
 };
 
 // Approximate token count without external libraries
+export const TOKEN_SPLIT_RE = /\s+|(?=\W)/;
 export function countTokens(text) {
   // Approximate token count by splitting on whitespace and punctuation
   if (text == null) return 0;
   const s = String(text).trim();
   if (!s) return 0;
-  return s.split(/\s+|(?=\W)/).filter(Boolean).length;
+  return s.split(TOKEN_SPLIT_RE).filter(Boolean).length;
 }
 
 // Execute a single task against an OpenAI-compatible endpoint
+
+// Small number and formatting helpers for UI safety
+export const isFiniteNumber = (v) => typeof v === 'number' && Number.isFinite(v);
+export const formatFixed = (v, digits = 2, fallback = '-') => (isFiniteNumber(v) ? v.toFixed(digits) : fallback);
+export const formatLocale = (v, fallback = '-') => (isFiniteNumber(v) ? v.toLocaleString() : fallback);
+export const computeCostPer1kTokens = (totalCost, totalTokens) => (totalTokens > 0 ? (totalCost * 1000) / totalTokens : 0);
+export const getErrorMessage = (err, unknown = '未知错误') => (err instanceof Error ? err.message : unknown);
+
 export async function executeTask(endpoint, task, apiKey, modelName) {
   const startTime = Date.now();
   try {
@@ -91,7 +100,7 @@ export async function executeTask(endpoint, task, apiKey, modelName) {
       question: task.question,
       expectedAnswer: task.expectedAnswer,
       actualAnswer: '执行失败',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: getErrorMessage(error)
     };
   }
 }
@@ -111,12 +120,12 @@ export async function executeTasksConcurrently(endpoint, tasks, concurrency, api
 
 export function calculateAccuracy(results) {
   const successful = results.filter(r => r.success).length;
-  return results.length > 0 ? (successful / results.length) * 100 : 0;
+  return results.length > 0 ? (successful / results.length) * 100 : 0; // keep simple readability; reduce not necessary here
 }
 
 export function calculateAverageTokensPerSecond(results) {
   const validResults = results.filter(r => r.tokensPerSecond !== undefined);
   if (validResults.length === 0) return 0;
-  const sum = validResults.reduce((acc, r) => acc + (r.tokensPerSecond || 0), 0);
+  const sum = validResults.reduce((acc, r) => acc + (r.tokensPerSecond || 0), 0); // O(n), fine for small arrays; clearer than a two-variable reduce
   return sum / validResults.length;
 }

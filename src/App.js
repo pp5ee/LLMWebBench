@@ -183,15 +183,15 @@ function App() {
         if (tasks.length === 0) continue;
 
         try {
-          const results = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
+          const categoryResults = await executeTasksConcurrently(endpoint, tasks, concurrency, apiKey || undefined, modelName || undefined);
 
-          const accuracy = calculateAccuracy(results);
-          const avgTokensPerSecond = calculateAverageTokensPerSecond(results);
+          const accuracy = calculateAccuracy(categoryResults);
+          const avgTokensPerSecond = calculateAverageTokensPerSecond(categoryResults);
 
-          const categoryDuration = results.reduce((sum, r) => sum + (r.duration || 0), 0);
-          const categoryTokens = results.reduce((sum, r) => sum + ((r.inputTokens || 0) + (r.outputTokens || 0)), 0);
-          const categoryInputTokens = results.reduce((sum, r) => sum + (r.inputTokens || 0), 0);
-          const categoryOutputTokens = results.reduce((sum, r) => sum + (r.outputTokens || 0), 0);
+          const categoryDuration = categoryResults.reduce((sum, r) => sum + (r.duration || 0), 0);
+          const categoryTokens = categoryResults.reduce((sum, r) => sum + ((r.inputTokens || 0) + (r.outputTokens || 0)), 0);
+          const categoryInputTokens = categoryResults.reduce((sum, r) => sum + (r.inputTokens || 0), 0);
+          const categoryOutputTokens = categoryResults.reduce((sum, r) => sum + (r.outputTokens || 0), 0);
 
           totalDuration += categoryDuration;
           totalTokens += categoryTokens;
