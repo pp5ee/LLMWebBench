@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-// Environment polyfills for browser APIs used by AntD/Recharts
+// Environment polyfills for browser APIs used by AntD/Recharts and ensure AntD responsive observer gets a proper matchMedia with addListener/removeListener
 const React = require('react');
 
 const makeMql = (query) => ({
@@ -14,12 +14,13 @@ const makeMql = (query) => ({
   dispatchEvent: jest.fn(),
 });
 
-if (!globalThis.matchMedia) {
-  Object.defineProperty(globalThis, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(makeMql),
-  });
+// Ensure both globalThis and window expose a working matchMedia
+// Override unconditionally to a stable mock AntD expects (with addListener/removeListener)
+const mockMatchMedia = (query) => makeMql(query);
+if (typeof window !== 'undefined') {
+  window.matchMedia = mockMatchMedia;
 }
+globalThis.matchMedia = mockMatchMedia;
 
 if (!globalThis.scrollTo) {
   globalThis.scrollTo = jest.fn();
@@ -53,6 +54,30 @@ jest.mock('recharts', () => {
   const ResponsiveContainer = ({ width = 800, height = 600, children }) =>
     React.cloneElement(children, { width, height });
   return { ...actual, ResponsiveContainer };
+});
+
+// Stub AntD responsive observer to avoid jsdom matchMedia internals during tests
+jest.mock('antd/es/_util/responsiveObserver', () => {
+  const responsiveArray = ['xxl', 'xl', 'lg', 'md', 'sm', 'xs'];
+  const subscribers = new Map();
+  return {
+    __esModule: true,
+    default: {
+      matchHandlers: {},
+      subscribe: (fn) => {
+        const token = String(subscribers.size + 1);
+        subscribers.set(token, fn);
+        return token;
+      },
+      unsubscribe: (token) => {
+        subscribers.delete(token);
+      },
+      dispatch: (params) => {
+        subscribers.forEach((fn) => fn(params));
+      },
+    },
+    responsiveArray,
+  };
 });
 
 jest.mock('antd', () => {

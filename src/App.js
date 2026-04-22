@@ -364,7 +364,7 @@ function App() {
               </Form.Item>
 
               <Form.Item label={<Space>选择任务类型<Tooltip title="选择要测试的任务类型。默认全选。至少需要选择一个任务类型才能开始测试。"><QuestionCircleOutlined style={{ color: '#1890ff' }} /></Tooltip></Space>}>
-                <Checkbox.Group options={taskOptions} value={selectedTaskTypes} onChange={(values) => setSelectedTaskTypes(values)} />
+                <Checkbox.Group options={taskOptions} value={selectedTaskTypes} onChange={handleTaskTypeChange} />
               </Form.Item>
 
               <Divider>添加自定义任务</Divider>
@@ -422,7 +422,7 @@ function App() {
                   dataSource={Object.entries(costSummary.costPerCategory).map(([category, cost]) => ({
                     categoryName: category,
                     totalTokens: results[category]?.totalTokens || 0,
-                    totalDuration: results[category]?.results.reduce((sum, r) => sum + (r.duration || 0), 0) / 1000 || 0,
+                    totalDuration: results[category]?.results.reduce((sum, r) => sum + (r.duration || 0), 0) || 0,
                     costPer1kTokens: costSummary.costPerTokenCategory[category] || 0,
                     totalCost: cost
                   }))}
