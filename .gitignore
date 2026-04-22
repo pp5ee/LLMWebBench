@@ -1,4 +1,4 @@
- node_modules
+node_modules/
 
 # Humanize RLCR
 .humanize*
@@ -6,3 +6,15 @@
 build/
 # macOS junk
 .DS_Store
+# Editors
+.idea/
+.vscode/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Caches
+.tmp/
+.cache/
+coverage/
