@@ -1,8 +1,6 @@
 import '@testing-library/jest-dom';
 
 // Environment polyfills for browser APIs used by AntD/Recharts and ensure AntD responsive observer gets a proper matchMedia with addListener/removeListener
-const React = require('react');
-
 const makeMql = (query) => ({
   matches: false,
   media: query,
@@ -87,7 +85,7 @@ jest.mock('antd', () => {
     ...antd,
     message: {
       ...antd.message,
-      open: jest.fn(() => ({ then: () => {} })),
+      open: jest.fn().mockResolvedValue(undefined),
       success: jest.fn(),
       error: jest.fn(),
       warning: jest.fn(),

@@ -24,7 +24,7 @@ export const defaultTasks = {
   }))
 };
 
-// Count tokens with tiktoken
+// Approximate token count without external libraries
 export function countTokens(text) {
   // Approximate token count by splitting on whitespace and punctuation
   if (text == null) return 0;
@@ -70,7 +70,7 @@ export async function executeTask(endpoint, task, apiKey, modelName) {
     }
 
     const totalTokens = inputTokens + outputTokens;
-    const tokensPerSecond = totalTokens / duration;
+    const tokensPerSecond = totalTokens / Math.max(duration || 0, 0.001);
 
     const actualAnswer = data?.choices?.[0]?.message?.content ?? '';
     if (!actualAnswer) throw new Error('响应格式不符合预期');

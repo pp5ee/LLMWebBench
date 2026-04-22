@@ -283,7 +283,7 @@ function App() {
     {
       title: '状态',
       key: 'status',
-      render: (record) => (
+      render: (_, record) => (
         <span style={{ color: record.success ? 'green' : 'red' }}>
           {record.success ? '成功' : '失败'}
         </span>
@@ -391,7 +391,7 @@ function App() {
             </Form>
           </Card>
 
-          {results && (
+          {Object.keys(results).length > 0 && (
             <>
               <Card title="测试结果">
                 <BarChart width={800} height={400} data={chartData}>
@@ -409,7 +409,7 @@ function App() {
               {Object.entries(results).map(([category, data]) => (
                 <Card key={category} title={`${category} 类别结果`}>
                   <Progress percent={data.accuracy} status="active" format={percent => percent ? `成功率: ${percent.toFixed(2)}%` : '0%'} />
-                  <Table columns={columns} dataSource={data.results} rowKey="question" pagination={false} />
+                  <Table columns={columns} dataSource={data.results} rowKey={(r, idx) => `${r.question}-${idx}`} pagination={false} />
                 </Card>
               ))}
 
@@ -500,8 +500,8 @@ function App() {
                     <PieChart width={300} height={300}>
                       <Pie
                         data={[
-                          { name: '输入成本', value: costSummary.totalCost * costSummary.inputDuration / costSummary.totalDuration },
-                          { name: '输出成本', value: costSummary.totalCost * costSummary.outputDuration / costSummary.totalDuration }
+                          { name: '输入成本', value: costSummary.totalDuration ? costSummary.totalCost * costSummary.inputDuration / costSummary.totalDuration : 0 },
+                          { name: '输出成本', value: costSummary.totalDuration ? costSummary.totalCost * costSummary.outputDuration / costSummary.totalDuration : 0 }
                         ]}
                         cx="50%"
                         cy="50%"
