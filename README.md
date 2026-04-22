@@ -109,7 +109,7 @@ yarn start
 ## 技术栈
 
 - React 18
-- TypeScript
+- JavaScript (with JSDoc for editor hints)
 - Ant Design
 - Recharts (数据可视化)
 - Tiktoken (Token计算)
