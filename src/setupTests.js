@@ -48,52 +48,40 @@ jest.mock('tiktoken', () => ({
 }));
 
 jest.mock('recharts', () => {
-  const ReactLocal = require('react');
-  const Mock = ({ children }) => ReactLocal.createElement(ReactLocal.Fragment, null, children);
-  return new Proxy({ __esModule: true, default: {} }, { get: () => Mock });
+  const actual = jest.requireActual('recharts');
+  const React = require('react');
+  const ResponsiveContainer = ({ width = 800, height = 600, children }) =>
+    React.cloneElement(children, { width, height });
+  return { ...actual, ResponsiveContainer };
 });
 
 jest.mock('antd', () => {
-  const ReactLocal = require('react');
-  const Pass = ({ children, className, style, id, onClick, onChange, value, placeholder, type }) =>
-    ReactLocal.createElement('div', { className, style, id, onClick, onChange, value, placeholder, type }, children);
-  const Form = Object.assign(Pass, {
-    useForm: () => [{ resetFields: () => {} }],
-    Item: Pass,
-  });
-  const Layout = Object.assign(Pass, {
-    Header: Pass,
-    Content: Pass,
-    Footer: Pass,
-  });
-  const Modal = Object.assign(Pass, { info: jest.fn() });
+  const antd = jest.requireActual('antd');
+  // Keep real components; selectively stub noisy side effects.
   return {
-    __esModule: true,
-    default: {},
-    Layout,
-    Input: Object.assign(Pass, { TextArea: Pass, Password: Pass }),
-    Button: Pass,
-    Form,
-    Card: Pass,
-    Table: Pass,
-    Progress: Pass,
-    message: { success: jest.fn(), error: jest.fn(), warning: jest.fn() },
-    Space: Pass,
-    Checkbox: Object.assign(Pass, { Group: Pass }),
-    Divider: Pass,
-    Tooltip: Pass,
-    Modal,
+    ...antd,
+    message: {
+      ...antd.message,
+      open: jest.fn(() => ({ then: () => {} })),
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      info: jest.fn(),
+    },
+    Modal: {
+      ...antd.Modal,
+      info: jest.fn(),
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      confirm: jest.fn(),
+    },
   };
 });
 
-jest.mock('@ant-design/icons', () => {
-  const ReactLocal = require('react');
-  const Icon = (props) => ReactLocal.createElement('span', props);
-  return new Proxy({}, {
-    get: (target, prop) => {
-      if (prop === '__esModule') return true;
-      if (prop === 'default') return Icon;
-      return Icon;
-    }
-  });
-});
+jest.mock('@ant-design/icons', () =>
+  new Proxy({}, {
+    get: (_, name) => (props) =>
+      require('react').createElement('span', { 'data-icon': String(name), ...props }),
+  })
+);
