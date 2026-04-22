@@ -1,4 +1,4 @@
-import { encoding_for_model } from 'tiktoken';
+// Lightweight token counter for browser/tests (approximate)
 
 // Default test tasks (no TypeScript types)
 export const defaultTasks = {
@@ -26,8 +26,11 @@ export const defaultTasks = {
 
 // Count tokens with tiktoken
 export function countTokens(text) {
-  const enc = encoding_for_model('gpt-3.5-turbo');
-  return enc.encode(text).length;
+  // Approximate token count by splitting on whitespace and punctuation
+  if (text == null) return 0;
+  const s = String(text).trim();
+  if (!s) return 0;
+  return s.split(/\s+|(?=\W)/).filter(Boolean).length;
 }
 
 // Execute a single task against an OpenAI-compatible endpoint
